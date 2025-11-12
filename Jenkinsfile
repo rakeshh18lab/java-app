@@ -3,8 +3,7 @@ pipeline {
  
     environment {
         AWS_REGION = 'us-east-1'
-        ECR_REPO = '175709796794.dkr.ecr.us-east-1.amazonaws.com/my-app'
-        IMAGE_NAME = 'my-app'
+        ECR_REPO = '757897967941.dkr.ecr.us-east-1.amazonaws.com/my-app'
     }
  
     stages {
@@ -22,13 +21,12 @@ pipeline {
  
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t ${IMAGE_NAME}:latest ${WORKSPACE}"
+                sh 'docker build -t my-app:latest .'
             }
         }
  
         stage('Login to Amazon ECR') {
             steps {
-                // Using AWS credentials stored in Jenkins
                 withAWS(region: "${AWS_REGION}", credentials: 'aws-creds') {
                     sh """
                         aws ecr get-login-password --region ${AWS_REGION} | \
@@ -41,7 +39,7 @@ pipeline {
         stage('Push Docker Image to ECR') {
             steps {
                 sh """
-                    docker tag ${IMAGE_NAME}:latest ${ECR_REPO}:latest
+                    docker tag my-app:latest ${ECR_REPO}:latest
                     docker push ${ECR_REPO}:latest
                 """
             }
