@@ -4,6 +4,7 @@ pipeline {
     environment {
         AWS_REGION = 'us-east-1'
         ECR_REPO = '175709796794.dkr.ecr.us-east-1.amazonaws.com/my-app'
+        IMAGE_NAME = 'my-app'
     }
  
     stages {
@@ -15,42 +16,35 @@ pipeline {
  
         stage('Build with Maven') {
             steps {
-                sh 'mvn clean package'
+                sh 'mvn clean install'
             }
         }
  
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t my-app:latest .'
+                sh "docker build -t ${IMAGE_NAME}:latest ${WORKSPACE}"
             }
         }
  
         stage('Login to Amazon ECR') {
             steps {
+                // Using AWS credentials stored in Jenkins
                 withAWS(region: "${AWS_REGION}", credentials: 'aws-creds') {
-                    sh '''
-                        aws ecr get-login-password --region ${AWS_REGION} \
-                        | docker login --username AWS --password-stdin ${ECR_REPO}
-                    '''
+                    sh """
+                        aws ecr get-login-password --region ${AWS_REGION} | \
+                        docker login --username AWS --password-stdin ${ECR_REPO}
+                    """
                 }
             }
         }
  
         stage('Push Docker Image to ECR') {
             steps {
-                sh '''
-                    docker tag my-app:latest ${ECR_REPO}:latest
+                sh """
+                    docker tag ${IMAGE_NAME}:latest ${ECR_REPO}:latest
                     docker push ${ECR_REPO}:latest
-                '''
+                """
             }
         }
     }
-}
-
-withAWS(region: 'us-east-1', credentials: 'aws-creds') {
-    sh '''
-        aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 175789796794.dkr.ecr.us-east-1.amazonaws.com
-        docker tag myapp:latest 175789796794.dkr.ecr.us-east-1.amazonaws.com/myapp:latest
-        docker push 175789796794.dkr.ecr.us-east-1.amazonaws.com/myapp:latest
-    '''
 }
