@@ -46,3 +46,11 @@ pipeline {
         }
     }
 }
+
+withAWS(region: 'us-east-1', credentials: 'aws-creds') {
+    sh '''
+        aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 175789796794.dkr.ecr.us-east-1.amazonaws.com
+        docker tag myapp:latest 175789796794.dkr.ecr.us-east-1.amazonaws.com/myapp:latest
+        docker push 175789796794.dkr.ecr.us-east-1.amazonaws.com/myapp:latest
+    '''
+}
