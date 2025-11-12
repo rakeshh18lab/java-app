@@ -3,7 +3,7 @@ pipeline {
  
     environment {
         AWS_REGION = 'us-east-1'
-        ECR_REPO   = '175709796794.dkr.ecr.us-east-1.amazonaws.com/my-app'
+        ECR_REPO = '175709796794.dkr.ecr.us-east-1.amazonaws.com/my-app'
     }
  
     stages {
@@ -15,15 +15,13 @@ pipeline {
  
         stage('Build with Maven') {
             steps {
-                sh 'mvn clean install'
+                sh 'mvn clean package'
             }
         }
  
         stage('Build Docker Image') {
             steps {
-                script {
-                    dockerImage = docker.build("my-app:latest")
-                }
+                sh 'docker build -t my-app:latest .'
             }
         }
  
@@ -31,8 +29,8 @@ pipeline {
             steps {
                 withAWS(region: "${AWS_REGION}", credentials: 'aws-creds') {
                     sh '''
-                        aws ecr get-login-password --region ${AWS_REGION} | \
-                        docker login --username AWS --password-stdin ${ECR_REPO}
+                        aws ecr get-login-password --region ${AWS_REGION} \
+                        | docker login --username AWS --password-stdin ${ECR_REPO}
                     '''
                 }
             }
@@ -40,12 +38,10 @@ pipeline {
  
         stage('Push Docker Image to ECR') {
             steps {
-                script {
-                    sh '''
-                        docker tag my-app:latest ${ECR_REPO}:latest
-                        docker push ${ECR_REPO}:latest
-                    '''
-                }
+                sh '''
+                    docker tag my-app:latest ${ECR_REPO}:latest
+                    docker push ${ECR_REPO}:latest
+                '''
             }
         }
     }
